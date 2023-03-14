@@ -6,6 +6,7 @@ import os
 
 from datetime import datetime
 
+
 class HttpRequest:
     def __init__(self, method, path, headers, body):
         self.method = method
@@ -45,20 +46,15 @@ class HttpServer:
       
     def serveClient(self, conn):
         try:
-            print("try parse")
             req = self.parseRequest(conn)
-            print("req parsed")
             resp, filePath = self.serveRequest(req)
-            print("got resp")
             self.sendResponse(conn, resp)
-            if req.method == 'GET' and filePath != "": # response body
+            if type(req) == HttpRequest and req.method == 'GET' and filePath != "": # response body
                 file = open(filePath, 'rb')
                 conn.sendfile(file)
                 file.close()
-            print("responded")
-            print(resp.headers)
         except Exception as e:
-            print(e)
+            print("ERROR: ", e)
 
         if conn:
             conn.close()
@@ -66,11 +62,18 @@ class HttpServer:
     def parseRequest(self, conn):
         rawFile = conn.makefile('r')
         reqInfo = rawFile.readline().split()
+        headers = [
+                   ('Server', 'HW2-Server'),
+                   ('Date', datetime.now()),
+                   ('Connection', 'close')
+                   ]     
         if len(reqInfo) != 3:
-            return HttpResponse(403, 'Wrong path string')
+            return HttpResponse(403, 'Wrong path string', headers)
         method, path, _ = reqInfo
         if method != 'GET' and method != 'HEAD':
-            return HttpResponse(405, 'Method Not Allowed')
+            return HttpResponse(405, 'Method Not Allowed', headers)
+        if path.find('/../') != -1:
+            return HttpResponse(403, 'Wrong path string', headers)
         headers = {}
         while True:
             str = rawFile.readline()
@@ -85,7 +88,7 @@ class HttpServer:
 
     def serveRequest(self, req):
         if (type(req) != HttpRequest):
-            return req
+            return req, ""
         headers = [
                    ('Server', 'HW2-Server'),
                    ('Date', datetime.now()),
@@ -93,11 +96,10 @@ class HttpServer:
                    ]
         GettingIndexFile = False
         urlPath = unquote(req.path)
+        filePath = self.root + urlPath
         if req.path[-1] == '/' and req.path.count('.') == 0:
-            filePath = self.root + urlPath + 'index.html'
+            filePath = '.' + urlPath + 'index.html'
             GettingIndexFile = True
-        else:
-            filePath = self.root + urlPath
         try:
             file = open(filePath, 'rb')
         except:
@@ -107,8 +109,11 @@ class HttpServer:
                 return HttpResponse(404, 'Not Found', headers), ""
 
         contentType, _ = mimetypes.guess_type(filePath, strict=True)
-        headers.insert(('Content-Type', contentType))
-        headers.insert(('Content-Length', os.path.getsize(filePath)))
+        fileType = filePath.split('.')[-1]
+        if fileType == "swf":
+            contentType = "application/x-shockwave-flash"
+        headers.insert(-1, ('Content-Type', contentType))
+        headers.insert(-1, ('Content-Length', str(os.path.getsize(filePath))))
         file.close()
         return HttpResponse(200, 'OK', headers), filePath
 

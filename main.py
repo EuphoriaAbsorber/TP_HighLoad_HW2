@@ -5,5 +5,5 @@ PORT = 5500
 
 if __name__ == '__main__':
     server = HTTPServer(HOST, PORT)
-    server.ListenAndServe()
+    server.listenAndServe()
     

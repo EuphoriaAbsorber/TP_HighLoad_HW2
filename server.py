@@ -79,17 +79,13 @@ class HttpServer:
       
     def serveClient(self, conn):
         try:
-            #print("try parse")
             req = self.parseRequest(conn)
-            #print("req parsed")
             resp, filePath = self.serveRequest(req)
-            #print("got resp")
             self.sendResponse(conn, resp)
             if type(req) == HttpRequest and req.method == 'GET' and filePath != "": # response body
                 file = open(filePath, 'rb')
                 conn.sendfile(file)
                 file.close()
-            #print("responded")
         except Exception as e:
             print("ERROR: ", e)
 

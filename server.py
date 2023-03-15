@@ -64,7 +64,7 @@ class HttpServer:
                     print('Новый процесс: ', pid)
                     pids.append(pid)
                     for _ in range(self.maxThreads):
-                        t = threading.Thread(target=self.threadWork, daemon=True)
+                        t = threading.Thread(target=self.threadWork)
                         t.start()
                     pids.append(pid)
                     while True:

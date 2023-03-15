@@ -25,12 +25,14 @@ class HttpResponse:
         print(self.code, self.status, self.headers, self.body)
 
 class HttpServer:
-    def __init__(self, host, port, rootDir):
+    def __init__(self, host, port, rootDir, maxThreads):
         self.host = host
         self.port = port
         self.root = rootDir
+        self.maxThreads = maxThreads
 
     def listenAndServe(self):
+        print("Settings: ", self.host, self.port, self.root, self.maxThreads)
         print("Starting server...")
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # семейство протоколов 'Интернет' (INET), тип передачи данных 'потоковый' (TCP)
         try:
@@ -46,13 +48,17 @@ class HttpServer:
       
     def serveClient(self, conn):
         try:
+            #print("try parse")
             req = self.parseRequest(conn)
+            #print("req parsed")
             resp, filePath = self.serveRequest(req)
+            #print("got resp")
             self.sendResponse(conn, resp)
             if type(req) == HttpRequest and req.method == 'GET' and filePath != "": # response body
                 file = open(filePath, 'rb')
                 conn.sendfile(file)
                 file.close()
+            #print("responded")
         except Exception as e:
             print("ERROR: ", e)
 
@@ -98,7 +104,7 @@ class HttpServer:
         urlPath = unquote(req.path)
         filePath = self.root + urlPath
         if req.path[-1] == '/' and req.path.count('.') == 0:
-            filePath = '.' + urlPath + 'index.html'
+            filePath = self.root + urlPath + 'index.html'
             GettingIndexFile = True
         try:
             file = open(filePath, 'rb')

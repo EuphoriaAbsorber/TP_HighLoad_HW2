@@ -1,10 +1,10 @@
 from server import HttpServer
+from config import parseConfig
 
-HOST = '127.0.0.1'
-PORT = 5500
-ROOT = './'
+
 
 if __name__ == '__main__':
-    server = HttpServer(HOST, PORT, ROOT)
+    host, port, root, max_threads = parseConfig()
+    server = HttpServer(host, port, root, max_threads)
     server.listenAndServe()
     

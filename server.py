@@ -56,20 +56,18 @@ class HttpServer:
 
         try:
             serv_sock.bind((self.host, self.port))
-            serv_sock.listen(self.maxConns)
-                
-            for thread in range(cpu_count):
+            serv_sock.listen()
+            for _ in range(cpu_count):
                 pid = os.fork()
                 if pid != 0:
                     print('Новый процесс: ', pid)
                     pids.append(pid)
                     for _ in range(self.maxThreads):
-                        t = threading.Thread(target=self.threadWork)
+                        t = threading.Thread(target=self.threadWork, daemon=True)
                         t.start()
                     pids.append(pid)
                     while True:
-                        conn, clientAddr = serv_sock.accept() # blocking
-                        print('Connected by', clientAddr)
+                        conn, _ = serv_sock.accept() # blocking
                         self.taskQueue.put(conn)
         except KeyboardInterrupt:
             serv_sock.close()

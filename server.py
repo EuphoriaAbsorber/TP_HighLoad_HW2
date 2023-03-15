@@ -63,18 +63,13 @@ class HttpServer:
                 if pid != 0:
                     print('Новый процесс: ', pid)
                     pids.append(pid)
-                    #thread_pool = ThreadPoolManger(thread_limit)
                     for _ in range(self.maxThreads):
                         t = threading.Thread(target=self.threadWork, daemon=True)
                         t.start()
                     pids.append(pid)
                     while True:
-                        #sock, addr = server_socket.accept()
-                        #thread_pool.add_work(handle, *(sock, document_root))
                         conn, clientAddr = serv_sock.accept() # blocking
                         print('Connected by', clientAddr)
-                        #self.serveClient(conn)
-                        #conn, _ = sock.accept()
                         self.taskQueue.put(conn)
         except KeyboardInterrupt:
             serv_sock.close()

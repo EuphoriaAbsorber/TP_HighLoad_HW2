@@ -6,6 +6,10 @@ import os
 
 from datetime import datetime
 
+import multiprocessing
+import threading
+import queue
+import signal
 
 class HttpRequest:
     def __init__(self, method, path, headers, body):
@@ -25,27 +29,57 @@ class HttpResponse:
         print(self.code, self.status, self.headers, self.body)
 
 class HttpServer:
-    def __init__(self, host, port, rootDir, maxThreads, maxConns):
+    def __init__(self, host, port, rootDir, maxThreads, maxConns, maxCPUs):
         self.host = host
         self.port = port
         self.root = rootDir
         self.maxThreads = maxThreads
-        self.maxConns = 5
+        self.maxConns = maxConns
+        self.maxCPUs = maxCPUs
+        self.taskQueue = queue.SimpleQueue()
+
+    def threadWork(self):
+        while True:
+            conn = self.taskQueue.get()
+            if conn:
+                self.serveClient(conn)
+                conn.close()
 
     def listenAndServe(self):
         print("Settings: ", self.host, self.port, self.root, self.maxThreads)
         print("Starting server...")
         
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # семейство протоколов 'Интернет' (INET), тип передачи данных 'потоковый' (TCP)
+        cpu_count = min(multiprocessing.cpu_count(), self.maxCPUs)
+        pids = []
+        print("number of cpus", cpu_count)
+
         try:
             serv_sock.bind((self.host, self.port))
             serv_sock.listen(self.maxConns)
-            while True:
-                conn, clientAddr = serv_sock.accept() # blocking
-                print('Connected by', clientAddr)
-                self.serveClient(conn)
+                
+            for thread in range(cpu_count):
+                pid = os.fork()
+                if pid != 0:
+                    print('Новый процесс: ', pid)
+                    pids.append(pid)
+                    #thread_pool = ThreadPoolManger(thread_limit)
+                    for _ in range(self.maxThreads):
+                        t = threading.Thread(target=self.threadWork, daemon=True)
+                        t.start()
+                    pids.append(pid)
+                    while True:
+                        #sock, addr = server_socket.accept()
+                        #thread_pool.add_work(handle, *(sock, document_root))
+                        conn, clientAddr = serv_sock.accept() # blocking
+                        print('Connected by', clientAddr)
+                        #self.serveClient(conn)
+                        #conn, _ = sock.accept()
+                        self.taskQueue.put(conn)
         except KeyboardInterrupt:
             serv_sock.close()
+            for pid in pids:
+                os.kill(pid, signal.SIGTERM)
             print("server has been stopped")
       
     def serveClient(self, conn):

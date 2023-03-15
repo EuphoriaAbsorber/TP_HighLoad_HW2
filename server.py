@@ -25,19 +25,21 @@ class HttpResponse:
         print(self.code, self.status, self.headers, self.body)
 
 class HttpServer:
-    def __init__(self, host, port, rootDir, maxThreads):
+    def __init__(self, host, port, rootDir, maxThreads, maxConns):
         self.host = host
         self.port = port
         self.root = rootDir
         self.maxThreads = maxThreads
+        self.maxConns = 5
 
     def listenAndServe(self):
         print("Settings: ", self.host, self.port, self.root, self.maxThreads)
         print("Starting server...")
+        
         serv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # семейство протоколов 'Интернет' (INET), тип передачи данных 'потоковый' (TCP)
         try:
             serv_sock.bind((self.host, self.port))
-            serv_sock.listen()
+            serv_sock.listen(self.maxConns)
             while True:
                 conn, clientAddr = serv_sock.accept() # blocking
                 print('Connected by', clientAddr)

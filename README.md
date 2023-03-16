@@ -64,7 +64,7 @@ ab -n 50000 -c 200 127.0.0.1:9090/httptest/wikipedia_russia.html
 ```
 ![изображение](https://user-images.githubusercontent.com/65418582/225332835-7e16e095-32f1-44f2-89d9-ec6d5f9f69b1.png)
 
-RPS Table
+RPS Table for ```ab -n 10000 -c 25 127.0.0.1:port/httptest/wikipedia_russia.html``` request
 
 | server \ workers              | 4       | 32      | 64      |
 | --------------------------    |  :---:  | :-----: | :-----: |
